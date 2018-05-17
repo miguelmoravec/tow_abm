@@ -1,0 +1,118 @@
+---
+title: "Data_sort"
+author: "Miguel Moravec"
+date: "May 16, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(pacman)
+p_load(zoo, tidyverse, lubridate, readxl, stringr, janitor)
+
+```
+
+```{r load_data}
+
+#reads in data
+
+data = read_csv('rivermileCG2013Jan-Jun.csv')
+
+#sorts by boat id and date
+
+data2 = data %>% arrange(desc(-MMSI, PositionTi))
+
+#calcs diff in rivermile marker for each value per boat
+
+data2$diff <- ave(data2$RiverMile, data2$MMSI, FUN=function(x) c(0, diff(x)))
+
+data2$diff_mag=1
+
+data2
+
+a=2
+while (a<nrow(data2)) {
+  
+  data2$diff_mag[a] = sign(data2$diff[a])
+  
+  if (data2$diff_mag[a] == 0) {
+    data2$diff_mag[a] = data2$diff_mag[a-1]
+  }
+  
+  a = a + 1
+}
+
+data2
+
+#makes new column
+
+data2$tow_id<-1
+
+#makes list of values at which sign changes
+
+pos <- head(cumsum(rle(data2$diff_mag >= 0)$lengths), -1)
+head(pos)
+
+x = 1
+y = 1
+
+#assigns tow id for every point at which sign changes AND for every new boat
+
+while (x<nrow(data2)) {
+  #detects sign/heading change from list and creates new tow id
+  if (x %in% pos == TRUE) {
+    y = y + 1
+    data2$tow_id[x+1] = y
+  }
+  else {
+    #handles error at data[1]
+    if (x == 1) {
+      data2$tow_id[x] = 1
+    }
+    
+    else {
+      #detects if new boat based on changing MMSI number and assigns new tow id
+      if ((data2$MMSI[x] == data2$MMSI[x-1]) == FALSE) {
+        y = y + 1
+        data2$tow_id[x] = y
+        data2$tow_id[x+1] = y
+      }
+      #keeps tug id same if above if statements not met
+      else {
+        data2$tow_id[x+1] = data2$tow_id[x]
+      }
+    }
+  }
+
+    
+  x = x + 1
+}
+
+data2[, c("MMSI", "PositionTi", "RiverMile", "diff","diff_mag", "tow_id")]
+
+
+```
+
+``` {r heading}
+
+#simply takes numeric diff_mag value and generates new column 'heading' with up/downstream info for each value
+#'heading' is the same for each set of values in a tug id, by definition of tug id
+
+data2$heading = NA
+
+z=1
+
+while (z<nrow(data2)) {
+ if (sign(data2$diff_mag[z]) == 1) {
+   data2$heading[z] = "Downstream"
+ }
+ else{
+   data2$heading[z] = "Upstream"
+ }
+  z=z+1
+}
+
+data2[, c("MMSI", "RiverMile", "diff", "tow_id", "heading")]
+```
+
+
