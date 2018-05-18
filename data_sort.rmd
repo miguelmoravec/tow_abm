@@ -46,7 +46,7 @@ data2
 
 #makes new column
 
-data2$tow_id<-1
+data2$tow_id<-0
 
 #makes list of values at which sign changes
 
@@ -63,14 +63,16 @@ while (x<q) {
   #detects sign/heading change from list and creates new tow id
   if (x %in% pos == TRUE) {
     y = y + 1
-    data2$tow_id[x+1] = y
-    data2[nrow(data2) + 1,] = data2[x+1,]
-    data2$tow_id[nrow(data2)] = data2$tow_id[x+1] - 1
+    data2$tow_id[x] = y
+    data2$tow_id[x+1] = y + 1
+    #data2[nrow(data2) + 1,] = data2[x+1,]
+    #data2$tow_id[nrow(data2)] = data2$tow_id[x+1] - 1
+    #data2$diff_mag[nrow(data2)] = -1 * (data2$diff_mag[nrow(data2)])
   }
   else {
     #handles error at data[1]
     if (x == 1) {
-      data2$tow_id[x] = 1
+      data2$tow_id[x] = 0
     }
     
     else {
@@ -86,13 +88,75 @@ while (x<q) {
       }
     }
   }
-
     
   x = x + 1
 }
+
+data2 = data2 %>% arrange(desc(-tow_id))
+data2[, c("MMSI", "PositionTi", "RiverMile", "diff","diff_mag", "tow_id")]
+
+```
+
+```{r redo}
+
+#redo but with the dupes #########REDOOOOOOOOo
+
+data2$diff <- ave(data2$RiverMile, data2$MMSI, FUN=function(x) c(0, diff(x)))
+
+a=2
+while (a<nrow(data2)) {
+  
+  data2$diff_mag[a] = sign(data2$diff[a])
+  
+  if (data2$diff_mag[a] == 0) {
+    data2$diff_mag[a] = data2$diff_mag[a-1]
+  }
+  
+  a = a + 1
+}
+
+
+pos <- head(cumsum(rle(data2$diff_mag >= 0)$lengths), -1)
+
+x = 1
+y = 1
+
+while (x<nrow(data2)) {
+  #detects sign/heading change from list and creates new tow id
+  if (x %in% pos == TRUE) {
+    y = y + 1
+    data2$tow_id[x+1] = y
+    #data2[nrow(data2) + 1,] = data2[x+1,]
+    #data2$tow_id[nrow(data2)] = data2$tow_id[x+1] - 1
+  }
+  else {
+    #handles error at data[1]
+    if (x == 1) {
+      data2$tow_id[x] = 0
+    }
+    
+    else {
+      #detects if new boat based on changing MMSI number and assigns new tow id
+      if ((data2$MMSI[x] == data2$MMSI[x-1]) == FALSE) {
+        y = y + 1
+        data2$tow_id[x] = y
+        data2$tow_id[x+1] = y
+      }
+      #keeps tug id same if above if statements not met
+      else {
+        data2$tow_id[x+1] = data2$tow_id[x]
+      }
+    }
+  }
+    
+  x = x + 1
+}
+
+
+
 data2 = data2 %>% arrange(desc(-tow_id))
 
-data2[, c("MMSI", "PositionTi", "RiverMile", "diff","diff_mag", "tow_id")]
+data2[, c("MMSI", "PositionTi", "RiverMile", "diff", "diff_mag", "tow_id")]
 
 
 ```
