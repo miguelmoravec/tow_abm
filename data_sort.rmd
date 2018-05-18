@@ -8,7 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(pacman)
-p_load(zoo, tidyverse, lubridate, readxl, stringr, janitor)
+p_load(zoo, tidyverse, lubridate, readxl, stringr, janitor, dplyr)
 
 ```
 
@@ -55,14 +55,17 @@ head(pos)
 
 x = 1
 y = 1
+q = nrow(data2)
 
 #assigns tow id for every point at which sign changes AND for every new boat
 
-while (x<nrow(data2)) {
+while (x<q) {
   #detects sign/heading change from list and creates new tow id
   if (x %in% pos == TRUE) {
     y = y + 1
     data2$tow_id[x+1] = y
+    data2[nrow(data2) + 1,] = data2[x+1,]
+    data2$tow_id[nrow(data2)] = data2$tow_id[x+1] - 1
   }
   else {
     #handles error at data[1]
@@ -87,6 +90,7 @@ while (x<nrow(data2)) {
     
   x = x + 1
 }
+data2 = data2 %>% arrange(desc(-tow_id))
 
 data2[, c("MMSI", "PositionTi", "RiverMile", "diff","diff_mag", "tow_id")]
 
