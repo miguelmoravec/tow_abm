@@ -138,13 +138,38 @@ data3 = data2 %>% group_by(tow_id) %>%
 
 data3
 
-data_upsteam = data3  %>% filter(heading == "Upstream") %>% summarize(MMSI = mean(MMSI), start_mile = dist_start[1], end_mile = dist_end[1], start_time = max_time_start[1], end_time = max_time_end[1], heading = Heading[1], max_dist_trav = max_dist[1])
+data_upstream = data3  %>% filter(heading == "Upstream") %>% summarize(MMSI = mean(MMSI), start_mile = dist_start[1], end_mile = dist_end[1], start_time = max_time_start[1], end_time = max_time_end[1], heading = Heading[1], max_dist_trav = max_dist[1])
   
 data_downstream = data3  %>% filter(heading == "Downstream") %>% summarize(MMSI = mean(MMSI), start_mile = dist_start[1], end_mile = dist_end[1], start_time = max_time_start[1], end_time = max_time_end[1], heading = Heading[1], max_dist_trav = max_dist[1])
 
+#rounds to nearest 15
+
+data_upstream$start_time = lubridate::round_date(data_upstream$start_time, "15 minutes")
+data_upstream$end_time = lubridate::round_date(data_upstream$end_time, "15 minutes")
+
+data_downstream$start_time = lubridate::round_date(data_downstream$start_time, "15 minutes")
+data_downstream$end_time = lubridate::round_date(data_downstream$end_time, "15 minutes")
+
+data_upstream
 data_downstream
+```
+```{r exact_formatting}
 
-data_upsteam
+up = data_upstream %>% group_by(tow_id) %>%
+  summarize(timestamp = start_time, arrival = start_time, departure = end_time, name = tow_id, link1tt = 0, link2tt
+ = 0, link3tt = 0, link4tt = 0, origin = start_mile, destination = end_mile, arrival_orig = start_time) %>%
+  select(-tow_id)
 
+up
+
+down = data_downstream %>% group_by(tow_id) %>%
+  summarize(timestamp = start_time, arrival = start_time, departure = end_time, name = tow_id, link1tt = 0, link2tt
+ = 0, link3tt = 0, link4tt = 0, origin = start_mile, destination = end_mile, arrival_orig = start_time) %>%
+  select(-tow_id)
+
+down
+
+write.csv(up, "upstreaming2.csv", row.names=FALSE)
+write.csv(down, "downstreaming2.csv", row.names=FALSE) #IMPORTANT!!! open the csv files and remove the quotes from the column headers or they will not pull up correctly in NetLogo
 ```
 
