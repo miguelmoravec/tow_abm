@@ -123,5 +123,28 @@ while (z<nrow(data2)) {
 
 data2[, c("MMSI", "RiverMile", "diff", "tow_id", "heading")]
 ```
+```{r useful_log}
 
+data3 = data2 %>% group_by(tow_id) %>%
+  select(MMSI, VesselType, PositionTi, RiverMile, tow_id, heading) %>%
+  slice(c(1, n())) %>%
+  mutate(max_dist = abs(RiverMile[1]-RiverMile[2])) %>%
+  mutate(dist_start = RiverMile[1]) %>%
+  mutate(dist_end = RiverMile[2]) %>%
+  mutate(max_time = PositionTi[2]-PositionTi[1]) %>%
+  mutate(max_time_start = PositionTi[1]) %>%
+  mutate(max_time_end = PositionTi[2]) %>%
+  mutate(Heading = heading[1]) 
+
+data3
+
+data_upsteam = data3  %>% filter(heading == "Upstream") %>% summarize(MMSI = mean(MMSI), start_mile = dist_start[1], end_mile = dist_end[1], start_time = max_time_start[1], end_time = max_time_end[1], heading = Heading[1], max_dist_trav = max_dist[1])
+  
+data_downstream = data3  %>% filter(heading == "Downstream") %>% summarize(MMSI = mean(MMSI), start_mile = dist_start[1], end_mile = dist_end[1], start_time = max_time_start[1], end_time = max_time_end[1], heading = Heading[1], max_dist_trav = max_dist[1])
+
+data_downstream
+
+data_upsteam
+
+```
 
