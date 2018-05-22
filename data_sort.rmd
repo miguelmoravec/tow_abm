@@ -18,7 +18,7 @@ p_load(zoo, tidyverse, lubridate, readxl, stringr, janitor, dplyr)
 ### PLACE FILE NAME HERE ###
 ############################
 
-input = "rivermileCG2014Jan.csv"
+input = "rivermileCG2014.csv"
 
 ############################
 ########### RUN ############
@@ -35,6 +35,8 @@ name = substring(input,12,(as.integer(nchar(input))))
 #sorts by boat id and date and removes irrelavant vessels by type
 
 data2 = data[order(data$MMSI, data$PositionTi),]
+
+data2
 
 data2 = filter(data2, VesselType == 'Tug' | VesselType == 'Vessel' | VesselType == 'Tanker')
 
@@ -215,4 +217,3 @@ down
 write.csv(up, paste("upstreaming", name, sep=""), row.names=FALSE)
 write.csv(down, paste("downstreaming", name, sep=""), row.names=FALSE)
 ```
-
