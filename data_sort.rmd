@@ -18,7 +18,7 @@ p_load(zoo, tidyverse, lubridate, readxl, stringr, janitor, dplyr)
 ### PLACE FILE NAME HERE ###
 ############################
 
-input = "rivermileCG2013Jan-Jun.csv"
+input = "rivermileCG2014Jan.csv"
 
 ############################
 ########### RUN ############
@@ -37,6 +37,8 @@ name = substring(input,12,(as.integer(nchar(input))))
 data2 = data[order(data$MMSI, data$PositionTi),]
 
 data2 = filter(data2, VesselType == 'Tug' | VesselType == 'Vessel' | VesselType == 'Tanker')
+
+data2
 
 #calcs diff in rivermile marker for each value per boat
 
@@ -210,7 +212,7 @@ down = data_downstream %>% group_by(tow_id) %>%
 
 down
 
-write.csv(up, paste("upstreaming", name), row.names=FALSE)
-write.csv(down, paste("downstreaming", name), row.names=FALSE)
+write.csv(up, paste("upstreaming", name, sep=""), row.names=FALSE)
+write.csv(down, paste("downstreaming", name, sep=""), row.names=FALSE)
 ```
 
