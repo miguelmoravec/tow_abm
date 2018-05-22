@@ -18,9 +18,11 @@ p_load(zoo, tidyverse, lubridate, readxl, stringr, janitor, dplyr)
 
 data = read_csv('rivermileCG2013Jan-Jun.csv')
 
-#sorts by boat id and date
+#sorts by boat id and date and removes irrelavant vessels by type
 
-data2 = data %>% arrange(desc(-MMSI, PositionTi))
+data2 = data[order(data$MMSI, data$PositionTi),]
+
+data2 = filter(data2, VesselType == 'Tug' | VesselType == 'Vessel' | VesselType == 'Tanker')
 
 #calcs diff in rivermile marker for each value per boat
 
@@ -125,6 +127,8 @@ data2[, c("MMSI", "RiverMile", "diff", "tow_id", "heading")]
 ```
 ```{r useful_log}
 
+
+
 data3 = data2 %>% group_by(tow_id) %>%
   select(MMSI, VesselType, PositionTi, RiverMile, tow_id, heading) %>%
   slice(c(1, n())) %>%
@@ -136,7 +140,25 @@ data3 = data2 %>% group_by(tow_id) %>%
   mutate(max_time_end = PositionTi[2]) %>%
   mutate(Heading = heading[1]) 
 
+#min_time_end
+data4 = data2 %>% group_by(tow_id) %>%
+  select(PositionTi, RiverMile, tow_id) %>%
+  filter(RiverMile == RiverMile[n()]) %>%
+  filter(PositionTi == PositionTi[1]) %>%
+  mutate(min_time_end = PositionTi) %>%
+  select(tow_id, min_time_end)
+
+#min_time_start
+data5 = data2 %>% group_by(tow_id) %>%
+  select(PositionTi, RiverMile, tow_id) %>%
+  filter(RiverMile == RiverMile[1]) %>%
+  filter(PositionTi == PositionTi[n()]) %>%
+  mutate(min_time_start = PositionTi) %>%
+  select(tow_id, min_time_start)
+  
 data3
+data4
+data5
 
 data_upstream = data3  %>% filter(heading == "Upstream") %>% summarize(MMSI = mean(MMSI), start_mile = dist_start[1], end_mile = dist_end[1], start_time = max_time_start[1], end_time = max_time_end[1], heading = Heading[1], max_dist_trav = max_dist[1])
   
