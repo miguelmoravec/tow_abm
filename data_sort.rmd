@@ -18,7 +18,7 @@ p_load(zoo, tidyverse, lubridate, readxl, stringr, janitor, dplyr)
 ### PLACE FILE NAME HERE ###
 ############################
 
-input = "rivermileCG2014.csv"
+input = "rivermileCG2013.csv"
 
 ############################
 ########### RUN ############
@@ -44,7 +44,8 @@ data2
 
 #calcs diff in rivermile marker for each value per boat
 
-data2$diff <- ave(data2$RiverMile, data2$MMSI, FUN=function(x) c(0, diff(x)))
+data2 = data2 %>% group_by(MMSI) %>%
+  mutate(diff = ave(RiverMile, MMSI, FUN=function(x) c(0, diff(x))))
 
 data2$diff_mag=1
 
@@ -105,9 +106,14 @@ while (x<=q) {
         data2$tow_id[x] = y
   
       }
-      #keeps tow id same if above if statements not met
+      
+      #changes tow id if over a week has passed
+      #this is broken
       else {
-        data2$tow_id[x] = data2$tow_id[x-1]
+
+        #keeps tow id same if above if statements not met
+          data2$tow_id[x] = data2$tow_id[x-1]
+        
       }
     }
   }
@@ -115,8 +121,9 @@ while (x<=q) {
   x = x + 1
 }
 
-data2 = data2 %>% arrange(desc(-tow_id))
-data2[, c("MMSI", "PositionTi", "RiverMile", "diff","diff_mag", "tow_id")]
+data2 = data2 %>% 
+  arrange(desc(-tow_id)) %>%
+  select("MMSI", "PositionTi", "RiverMile", "diff","diff_mag", "tow_id")
 
 ```
 
@@ -145,8 +152,12 @@ data2[, c("MMSI", "RiverMile", "diff", "tow_id", "heading")]
 ```
 ```{r useful_log}
 
+#deletes tow_ids of only one data point
+
+data2
+
 data3 = data2 %>% group_by(tow_id) %>%
-  select(MMSI, VesselType, PositionTi, RiverMile, tow_id, heading) %>%
+  select(MMSI, PositionTi, RiverMile, tow_id, heading) %>%
   slice(c(1, n())) %>%
   mutate(max_dist = abs(RiverMile[1]-RiverMile[2])) %>%
   mutate(dist_start = RiverMile[1]) %>%
@@ -155,6 +166,8 @@ data3 = data2 %>% group_by(tow_id) %>%
   mutate(max_time_start = PositionTi[1]) %>%
   mutate(max_time_end = PositionTi[2]) %>%
   mutate(Heading = heading[1]) 
+
+
 
 #min_time_end, the first time that the vessel is in the final RiverMile
 data4 = data2 %>% group_by(tow_id) %>%
@@ -175,17 +188,19 @@ data5 = data2 %>% group_by(tow_id) %>%
 ###for comparison of times
 #data2
 #data3
-#data4
+data4
 #data5
 
 data3 = left_join(data3, data4, by = 'tow_id')
-data3 = left_join(data3, data5, by = 'tow_id')
+#data3 = left_join(data3, data5, by = 'tow_id')
 
 data3
 
-data_upstream = data3  %>% filter(heading == "Upstream") %>% summarize(MMSI = mean(MMSI), start_mile = dist_start[1], end_mile = dist_end[1], start_time = min_time_start[1], end_time = min_time_end[1], heading = Heading[1], max_dist_trav = max_dist[1])
+data_upstream = data3  %>% filter(heading == "Upstream") %>%
+  group_by(tow_id) %>% summarize(MMSI = MMSI[1], start_mile = dist_start[1], end_mile = dist_end[1], start_time = max_time_start[1], end_time = max_time_end[1], heading = Heading[1], max_dist_trav = max_dist[1])
   
-data_downstream = data3  %>% filter(heading == "Downstream") %>% summarize(MMSI = mean(MMSI), start_mile = dist_start[1], end_mile = dist_end[1], start_time = min_time_start[1], end_time = min_time_end[1], heading = Heading[1], max_dist_trav = max_dist[1])
+data_downstream = data3  %>% filter(heading == "Downstream") %>%
+  group_by(tow_id) %>% summarize(MMSI = MMSI[1], start_mile = dist_start[1], end_mile = dist_end[1], start_time = max_time_start[1], end_time = max_time_end[1], heading = Heading[1], max_dist_trav = max_dist[1])
 
 #rounds to nearest 30
 
@@ -214,6 +229,6 @@ down = data_downstream %>% group_by(tow_id) %>%
 
 down
 
-write.csv(up, paste("upstreaming", name, sep=""), row.names=FALSE)
-write.csv(down, paste("downstreaming", name, sep=""), row.names=FALSE)
+write.csv(up, paste("FOURupstreaming", name, sep=""), row.names=FALSE)
+write.csv(down, paste("FOURdownstreaming", name, sep=""), row.names=FALSE)
 ```
