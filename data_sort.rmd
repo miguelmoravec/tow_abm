@@ -50,10 +50,14 @@ data2$diff_mag=1
 #this loop identifies the sign of the difference justed calc'ed, to be used as identifier for tow_id
 
 a=2
+data2$cat = 0
 
 while (a<nrow(data2)) {
   
   data2$diff_mag[a] = sign(data2$diff[a])
+  
+  date = toString(data2$PositionTi[a])
+  date_prev = toString(data2$PositionTi[a-1])
   
   #even if no progress made in a given time interval
   #this statement ensures that a value 'remembers' which direction it was going
@@ -63,8 +67,19 @@ while (a<nrow(data2)) {
   }
   
   #identifies when vessels change 
-  if ((data2$MMSI[a] != data2$MMSI[a-1])) {
+  if (data2$MMSI[a] != data2$MMSI[a-1]) {
     data2$diff_mag[a] = data2$diff_mag[a] * -1
+
+
+  } else if (as.integer(substr(date, 6, 7)) > as.integer(substr(date_prev, 6, 7)) + 1) {
+      data2$cat[a] = 1
+      
+      #print("")
+      #print(data2$MMSI[a-1])
+      #print(date_prev)
+      #print(data2$MMSI[a])
+      #print(date)
+      #print("")
   }
   a = a + 1
 }
@@ -90,7 +105,7 @@ q = nrow(data2)
 while (x<=q) {
   #detects sign/heading change from 'pos' list and updates with new tow id
   #creates a duplicate row to end the 'old' tow id at proper location
-  
+
   if (x %in% pos == TRUE) {
     y = y + 1
     data2$tow_id[x] = y
@@ -98,7 +113,7 @@ while (x<=q) {
     data2[nrow(data2) + 1,] = data2[x,]
     data2$tow_id[nrow(data2)] = data2$tow_id[x] - 1
     data2$diff_mag[x] = -1 * data2$diff_mag[x]
-    #data2$diff_mag[nrow(data2)] = -1 * (data2$diff_mag[nrow(data2)])
+    
   }
   else {
     #handles data[1]
@@ -111,6 +126,14 @@ while (x<=q) {
       data2$tow_id[x] = data2$tow_id[x-1]
       
     }
+    if (data2$cat[x] == 1) {
+    y = y + 1
+    data2$tow_id[x] = y
+    data2$tow_id[x+1] = y + 1
+    data2[nrow(data2) + 1,] = data2[x,]
+    data2$tow_id[nrow(data2)] = data2$tow_id[x] - 1
+    data2$cat[x] = 0
+    }
   }
     
   x = x + 1
@@ -120,18 +143,23 @@ while (x<=q) {
 
 data2 = data2 %>% 
   arrange(desc(-tow_id)) %>%
-  select("MMSI", "PositionTi", "RiverMile", "diff","diff_mag", "tow_id")
+  select("MMSI", "PositionTi", "RiverMile", "diff","diff_mag", "tow_id", "cat")
 
 #data2
 
-#this loop identifies residual tow_ids that conflate two vessels in one trip
+#this loop identifies residual tow_ids that conflate two vessels in one trip or took place over 2 months apart
 
 xx = 2
 
 while (xx < nrow(data2)) {
+
   
   if (data2$MMSI[xx] != data2$MMSI[xx - 1]) {
     data2$tow_id[xx - 1] = 0
+  }
+  
+  else if (data2$cat[xx] == 1 & sign(data2$diff_mag[xx] == sign(data2$diff_mag[xx-1]))) {
+    data2$tow_id[xx] = 0
   }
   
   xx = xx + 1
@@ -269,6 +297,6 @@ up$departure<-as.POSIXlt (up$departure, tz ="GMT", "%m/%d/%y %H:%M" )
 
 #writes csv using automated naming convention
 
-write.csv(up, paste("upstreaming", name, sep=""), row.names=FALSE)
-write.csv(down, paste("downstreaming", name, sep=""), row.names=FALSE)
+write.csv(up, paste("3upstreaming_datetest", name, sep=""), row.names=FALSE)
+write.csv(down, paste("3downstreaming_datetest", name, sep=""), row.names=FALSE)
 ```
