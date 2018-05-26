@@ -12,7 +12,7 @@ p_load(zoo, tidyverse, lubridate, readxl, stringr, janitor, dplyr)
 
 ```
 
-```{r load_data}
+```{r load_sort_data}
 
 ############################
 ### PLACE FILE NAME HERE ###
@@ -297,6 +297,6 @@ up$departure<-as.POSIXlt (up$departure, tz ="GMT", "%m/%d/%y %H:%M" )
 
 #writes csv using automated naming convention
 
-write.csv(up, paste("3upstreaming_datetest", name, sep=""), row.names=FALSE)
-write.csv(down, paste("3downstreaming_datetest", name, sep=""), row.names=FALSE)
+write.csv(up, paste("upstreaming", name, sep=""), row.names=FALSE)
+write.csv(down, paste("downstreaming", name, sep=""), row.names=FALSE)
 ```
