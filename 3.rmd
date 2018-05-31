@@ -1,0 +1,81 @@
+---
+title: "Untitled"
+author: "Miguel Moravec"
+date: "May 31, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+#3
+
+library(pacman)
+p_load(bayesplot, ggplot2, dplyr, stringr, reshape2)
+
+setwd('C:/Users/Miguel/Documents/USCG Project/tow_abm/tow_abm')
+
+
+d_sys<-read.csv("full_systime_data.csv", header=T, na.strings= "", stringsAsFactors = FALSE) 
+d_sys<-d_sys[,2:length(d_sys)]
+
+
+#adjust the matrix for simualtion set that was missing records for link 4
+# d_links$blnk1<-NA
+# d_links$blnk2<-NA
+# d_links$blnk3<-NA
+# d_links$blnk4<-NA
+# d_links<-d_links[,c(1:70,205,206,71:102,103:172,207,208,173:204)]
+
+#######################################################################
+##############Bayesian Style Posterior Predictive Checks###############
+#######################################################################
+n<-1 #number of simulations
+
+####################
+#system times
+#################
+
+d_sys[] <- lapply(d_sys, function(x) as.numeric(as.character(x)))
+d_sys[is.na(d_sys) ]<-0
+#d_sys<-d_sys[apply(d_sys[,-1], 1, function(x) !all(x==0)),]
+colnames(d_sys)<-c("Sim1", "AIS1")
+# c<-colSums(d_sys[,(n+1):(n+13)] != 0)
+# m<-which.max(c)
+# y<-as.numeric(d_sys[,n+m])
+# yrep<-d_sys[,c(1:n)]
+# yrep<-as.matrix(yrep)
+# yrep<-t(yrep)
+# 
+# pp_check(y,yrep, fun="ecdf_overlay")
+# pp_check(y,yrep, fun="boxplot", notch=FALSE)
+# pp_check(y,yrep, fun="stat_2d", stat=c( "mean","sd"))
+# pp_check(y,yrep, fun="hist")
+# pp_check(y,yrep, ppc_dens_overlay)
+# ppc_intervals(y,yrep, prob=0.9)
+# ppc_ribbon(y, yrep, prob=0.9)
+# ppc_error_scatter(y, yrep)
+# ppc_error_scatter_avg(y, yrep)
+# ppc_scatter(y, yrep)
+# ppc_stat(y,yrep, stat="mean")
+
+
+mydf_m<-melt(d_sys)
+mydf_m$number<-mydf_m$variable
+mydf_m$number<- mydf_m$number %>% str_match_all("[0-9]+") %>% unlist %>% as.character
+mydf_m$type<-mydf_m$variable
+mydf_m$type<- mydf_m$type %>% str_match_all("[[:alpha:]]+") %>% unlist %>% as.character
+mydf_m<-mydf_m[mydf_m$value!=0,]
+
+#boxplots
+ggplot(mydf_m,aes(y = value, x = number,colour=type)) + geom_boxplot(aes(), size=1) 
+
+#empircal cumulative distribution fcn
+ggplot(mydf_m,aes(x = value)) + stat_ecdf(geom="step",aes(colour = number, linetype=type), size=1)
+
+#probability density fcn
+ggplot(mydf_m,aes(x = value,colour = number,linetype=type)) + geom_density(aes(), size=1, adjust=1) + xlim(0,200) 
+
+
+
+
+```
+

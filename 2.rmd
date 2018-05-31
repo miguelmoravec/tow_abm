@@ -1,0 +1,144 @@
+---
+title: "Untitled"
+author: "Miguel Moravec"
+date: "May 31, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+#2
+
+#!!!IMPORTANT: Before running check the list of transit time data (lines 23-75) and systime data (lines 235-248) 
+#and the version of AIS data read in (lines 100-103 & 2696-267)!!!#
+
+library (pacman)
+p_load(dplyr, tidyr, splitstackshape, stringr, stats, ggplot2, bayesplot)
+
+#setwd('C:/Users/nelsonks/Dropbox/Kate_Paul/paul_simulations/2013_AIS_runs_02')
+#setwd('C:/Users/nelsonks/Dropbox/Kate_Paul/paul_simulations/2013_AIS_15min_jan_jun')
+#setwd('C:/Users/nelsonks/Dropbox/Kate_Paul/paul_simulations/2013_AIS_15min_jun_aug/')
+#setwd('C:/Users/nelsonks/Dropbox/Kate_Paul/paul_simulations/2013_AIS_15min_may_oct')
+#setwd('C:/Users/nelsonks/Dropbox/Kate_Paul/paul_simulations/2013_AIS_30min_jan_jun')
+#setwd('C:/Users/nelsonks/Dropbox/Kate_Paul/paul_simulations/2013_AIS_30min_may_oct')
+#setwd('C:/Users/nelsonks/Dropbox/Kate_Paul/paul_simulations/2013_AIS_30min_jun_aug')
+setwd('C:/Users/Miguel/Documents/USCG Project/tow_abm/tow_abm')
+
+
+#########################################
+###Comparison of Total Time in System ###
+#########################################
+
+  files2<- c("systime_testing1..csv"
+            )
+
+n<-length(files2)
+output2<-data.frame(Sim=as.character(seq(1,n)),MeanSTSim=as.numeric(seq(1,n)), MeanSTAis=as.numeric(seq(1,n)), SdSTSim=as.numeric(seq(1,n)),SdSTAis=as.numeric(seq(1,n)), stringsAsFactors = F)
+fullsystime<-data.frame(matrix(ncol=n*2, nrow = 1260))
+
+for (i in 1:n)
+{
+  simulation<-substr(files2[i],9,17)
+  
+  #read in the post-processed simulation results for a sim
+  sim_all<-read.csv(paste(files2[i]), header=T, na.strings= "") 
+  sim_all$id<-as.integer(as.character(sim_all$id))
+  sim_all$systemtime<-as.numeric(as.character(sim_all$systemtime))
+  sim_all<-sim_all[sim_all$systemtime <1000,] #remove bad data pieces
+  sim_all<-sim_all[!is.na(sim_all$systemtime),] #remove bad data pieces
+  
+  #read in the associated ais data and combine the upstream and downstream files
+  aisup<-read.csv("C:/Users/Miguel/Documents/USCG Project/tow_abm/tow_abm/upstreaming2013_old.csv", header=T, na.strings= "")
+  aisdown<-read.csv("C:/Users/Miguel/Documents/USCG Project/tow_abm/tow_abm/downstreaming2013_old.csv", header=T, na.strings= "")
+  aisup$heading<-90
+  aisdown$heading<-270
+  ais_all<-rbind(aisup,aisdown)
+  
+  
+  #build a table linking sim tows and their match in the ais tows
+  full_b<-left_join(ais_all, sim_all, by = c("name"="id"))
+  full_b<-full_b[!is.na(full_b$who),] #reduce to records with matches
+  full_b$arrival<-as.POSIXlt.factor(full_b$arrival)
+  full_b$departure<-as.POSIXlt.factor(full_b$departure)
+  full_b$ais_systime<-difftime(full_b$departure,full_b$arrival, units =c("hours"))
+  
+  #convert ais_all time values 
+  ais_all$arrival<-as.POSIXlt.factor(ais_all$arrival)
+  ais_all$departure<-as.POSIXlt.factor(ais_all$departure)
+  ais_all$ais_systime<-difftime(ais_all$departure,ais_all$arrival, units =c("hours"))
+  ais_all$ais_systime<-as.numeric(ais_all$ais_systime)
+  
+  #remove outliers
+  full_b_orig <-full_b
+  ais_IQR<-IQR(full_b$ais_systime, na.rm=TRUE, type=7)
+  Quantile_1<-quantile(full_b$ais_systime, probs=c(0.25, 0.5, 0.75), na.rm=TRUE)
+  bottom<-Quantile_1[1]-ais_IQR
+  top<-Quantile_1[3]+ais_IQR
+  full_b<-full_b[full_b$ais_systime >= bottom & full_b$ais_systime <= top, ]
+  
+  ais_all_orig<-ais_all
+  ais_IQR<-IQR(ais_all$ais_systime, na.rm=TRUE, type=7)
+  Quantile_1<-quantile(ais_all$ais_systime, probs=c(0.25, 0.5, 0.75), na.rm=TRUE)
+  bottom<-Quantile_1[1]-ais_IQR
+  top<-Quantile_1[3]+ais_IQR
+  ais_all<-ais_all[ais_all$ais_systime >= bottom & ais_all$ais_systime <= top, ]
+  
+  #calculate the n for the ais and sim datasets being compared and the Critical D statitistic for the KS test
+  sys_n_ais<-length(ais_all[(ais_all$arrival <= max(full_b$arrival) & ais_all$arrival >= min(full_b$arrival)) ,1]) #ais[ , paste(linkvar)])
+  sys_n_sim<-length(sim_all[,1])
+  alpha=0.1
+  sys_crit_D<-1.22*sqrt((sys_n_ais + sys_n_sim)/(sys_n_ais*sys_n_sim)) #for alpha = 0.10 (for alpha = 0.2 use 1.07 mulitplier, for alpha =0.15 use 1.14 multiplier for alpha = 0.05 multiplier is 1.358, for alpha = 0.01 multiplier is 1.63)
+  ais_all_sub<-ais_all[(ais_all$arrival <= max(full_b$arrival)& ais_all$arrival >= min(full_b$arrival)), "ais_systime" ] #subset of ais data bounded by simulated time frame
+  #ks<-ks.test(ais_all_sub,full_b$systemtime, alternative = "two.sided") 
+  #p_value<-exp(((ks$statistic/sqrt((sys_n_ais + sys_n_sim)/(sys_n_ais*sys_n_sim)))^2)/-0.5)*2 #compute the estiamted p-value for the crit_D and n #similar to estimate in ks.test
+
+  #mean and sd stats
+  mean_sim_all<-mean(sim_all$systemtime)
+  mean_ais_all<-as.numeric(mean(ais_all[(ais_all$arrival <= max(full_b$arrival) & ais_all$arrival >= min(full_b$arrival)) ,"ais_systime"]))
+  sd_sim_all<-sd(sim_all$systemtime)
+  sd_ais_all<-as.numeric(sd(ais_all[(ais_all$arrival <= max(full_b$arrival) & ais_all$arrival >= min(full_b$arrival)) ,"ais_systime"]))
+  
+  
+  #one-to-one RMSE
+  full_b$resid<-as.numeric(full_b$ais_systime-full_b$systemtime)
+  RMSE<-sqrt(mean(full_b$resid^2)) #25, 151
+  nRMSE<-RMSE/as.numeric(max(ais_all[,"ais_systime"])-min(ais_all[,"ais_systime"])) #range normalized RMSE
+  
+  #correlation calc and plots
+  spear_r<-cor(as.numeric(full_b[,"systemtime"]),as.numeric(full_b$ais_systime), method="spearman")
+  
+  # plot(full$ttime,full[,paste0(linkvar,".x")], ylab="AIS transit time", xlab="sim transit time", main = paste(simulation, link, heading), ylim=c(0,(mean_ais+2*sd_ais)))
+  # plot(as.Date(full$arrival_orig, tz="GMT"),full[,paste0(linkvar,".x")], col="green", ylim = c(0, max(full[,c(4,6)])), ylab="transit times", xlab="Date", main = paste(simulation, link, heading))
+  # points(as.Date(full$arrival_orig, tz="GMT"),full$ttime, col="red", cex=0.5) # --> should run several replicate simulations to get an RMSE for each time point
+  
+  plot(ecdf(full_b$ais_systime))
+  plot(ecdf(full_b$systemtime))
+
+  
+  #fill in the ouput table
+  output2$Sim[i]<-simulation
+  output2$MeanSTSim[i]<-mean_sim_all
+  output2$MeanSTAis[i]<-mean_ais_all
+  output2$delta_mean_ST[i]<-mean_ais_all-mean_sim_all
+  output2$SdSTSim[i]<-sd_sim_all
+  output2$SdSTAis[i]<-sd_ais_all
+  output2$delta_sd_ST[i]<-sd_ais_all-sd_sim_all
+  output2$n_ais_all[i]<-sys_n_ais
+  output2$n_sim_all[i]<-sys_n_sim
+  #output2$KS_all[i]<-ks$statistic
+  output2$crit_D_all[i]<-sys_crit_D
+  output2$RMSE_all[i]<-RMSE
+  output2$nRMSE_all[i]<-nRMSE
+  output2$spear_r_all[i]<-spear_r
+  #output2$ks_p_all[i]<-ks$p.value
+  
+  #fullsystime<-as.data.frame(full_b$ais_systime)
+  fullsystime[1:length(full_b$systemtime),i]<-as.numeric(full_b$systemtime)
+  fullsystime[1:length(full_b$ais_systime),n+i]<-as.numeric(full_b$ais_systime)
+  
+}
+
+write.csv(output2,"comparisontbl_system_outlier.csv")
+write.csv(fullsystime, "full_systime_data.csv")
+
+#
+```
