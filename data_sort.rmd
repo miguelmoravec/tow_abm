@@ -211,7 +211,7 @@ data3 = data2 %>% group_by(tow_id) %>%
   mutate(max_time = PositionTi[2]-PositionTi[1]) %>%
   mutate(max_time_start = PositionTi[1]) %>%
   mutate(max_time_end = PositionTi[2]) %>%
-  mutate(Heading = heading[1]) 
+  mutate(Heading = heading[1])
 
 #min_time_end, the first time that the vessel is in the final RiverMile
 data4 = data2 %>% group_by(tow_id) %>%
@@ -238,10 +238,16 @@ data5 = data2 %>% group_by(tow_id) %>%
 data3 = left_join(data3, data4, by = 'tow_id')
 data3 = left_join(data3, data5, by = 'tow_id')
 
-#filters out trips that did not change river miles
+#filters out trips that did not change river miles and trips moving at speeds greater than 15kts
 
 data3 = data3 %>%
-  filter(max_dist != 0)
+  filter(max_dist != 0) %>%
+  group_by(tow_id) %>%
+  slice(c(1, n())) %>%
+  mutate(trip_hours_min = (min_time_end[1] - min_time_start[1])/(60*60)) %>%
+  mutate(speed = max_dist[1]/as.numeric(trip_hours_min[1])) %>%
+  filter(speed < 15)
+  
 
 data_upstream = data3  %>% filter(heading == "Upstream") %>%
   group_by(tow_id) %>% summarize(MMSI = MMSI[1], start_mile = dist_start[1], end_mile = dist_end[1], start_time = min_time_start[1], end_time = min_time_end[1], heading = Heading[1], max_dist_trav = max_dist[1], unrounded_start = max_time_start[1])
