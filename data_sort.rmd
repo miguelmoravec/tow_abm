@@ -247,7 +247,6 @@ data3 = data3 %>%
   mutate(trip_hours_min = (min_time_end[1] - min_time_start[1])/(60*60)) %>%
   mutate(speed = max_dist[1]/as.numeric(trip_hours_min[1])) %>%
   filter(speed < 15)
-  
 
 data_upstream = data3  %>% filter(heading == "Upstream") %>%
   group_by(tow_id) %>% summarize(MMSI = MMSI[1], start_mile = dist_start[1], end_mile = dist_end[1], start_time = min_time_start[1], end_time = min_time_end[1], heading = Heading[1], max_dist_trav = max_dist[1], unrounded_start = max_time_start[1])
