@@ -1,0 +1,65 @@
+---
+title: "Untitled"
+author: "Miguel Moravec"
+date: "July 18, 2018"
+output: html_document
+---
+
+---
+title: "Untitled"
+author: "Miguel Moravec"
+date: "June 7, 2018"
+output: html_document
+---
+
+#3
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(pacman)
+p_load(zoo, tidyverse, lubridate, readxl, stringr, janitor, dplyr)
+```
+
+```{r speed_v_hourday}
+
+#average speed
+
+
+
+x=1
+
+data2as = data2
+
+data2as$speed_instant = 0
+
+q = nrow(data2as)
+
+while (x <= q) {
+    if (data2as$tow_id[x] == data2as$tow_id[x+1] && as.numeric(difftime(data2as$PositionTi[x+1], data2as$PositionTi[x], units = c("hours")) > 0.5)) {
+      time_list = c(data2as$PositionTi[x], data2as$PositionTi[x+1])
+      data2as[nrow(data2as) + 1,] = data2as[x,]
+      data2as$PositionTi[nrow(data2as)] = format(mean(strptime(time_list, "%Y-%m-%d %H:%M:%S")), "%Y-%m-%d %H:%M:%S")
+      data2as$speed_instant[nrow(data2as)] = abs(data2as$RiverMile[x+1] - data2as$RiverMile[x]) / as.numeric(difftime(data2as$PositionTi[x+1], data2as$PositionTi[x], units = c("hours")))
+      x = x + 1
+    }
+    else{
+      x = x + 1
+    }
+}
+
+time_speed = data2as %>%
+  ungroup() %>%
+  filter(speed_instant >= 0.5) %>%
+  arrange(desc(-tow_id))
+```
+```{r plot_time_speed}
+time_speed$PositionTi = strftime(time_speed$PositionTi, format="%H:%M:%S")
+
+time_speed$PositionTi = as.POSIXct(time_speed$PositionTi, format="%H:%M:%S")
+
+ggplot(data = time_speed, aes(x = PositionTi, y = speed_instant, color = abs(diff))) +
+    geom_smooth() + geom_point() + coord_cartesian(ylim=c(2.5,4.5))
+
+
+```
+

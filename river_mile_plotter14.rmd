@@ -1,0 +1,87 @@
+---
+title: "Untitled"
+author: "Miguel Moravec"
+date: "June 7, 2018"
+output: html_document
+---
+
+#3
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(pacman)
+p_load(zoo, tidyverse, lubridate, readxl, stringr, janitor, dplyr)
+```
+
+
+
+```{r plotty_up}
+
+#must run data_sord.rmd AND speed_plotter first chunk before this
+
+dsul = data_speed_up14 %>% group_by(tow_id) %>% 
+  filter(max_dist > 1)
+
+dsus = data_speed_up14 %>% group_by(tow_id) %>% 
+  filter(max_dist <= 1)
+
+x=1
+q = nrow(dsul)
+
+while (x < q) {
+  
+  for (i in ((dsul$RiverMile[x+1])+1):((dsul$RiverMile[x])-1)){ 
+    dsul[nrow(dsul) + 1,] = dsul[x,]
+    dsul$RiverMile[nrow(dsul)] = i
+}
+  x = x+2
+}
+
+dsul = arrange(dsul, tow_id, RiverMile)
+
+speed_up = rbind(dsul, dsus)
+
+speed_up_plot = speed_up %>% group_by(RiverMile) %>%
+  summarise(mean_speed = mean(speed))
+speed_up_plot
+
+speed_v_rivermile_u = ggplot(speed_up_plot, aes(x=RiverMile, y=mean_speed)) + geom_point() + labs(title = "Upstream 2014")
+
+ggsave(filename = str_c("rivermile_meanspeed_up14.png"), plot = speed_v_rivermile_u, device = "png", height=4, width=4, units="in", dpi = 300)
+
+speed_v_rivermile_u
+```
+
+```{r plotty_down}
+dsdl = data_speed_down14 %>% group_by(tow_id) %>% 
+  filter(max_dist > 1)
+
+dsds = data_speed_down14 %>% group_by(tow_id) %>% 
+  filter(max_dist <= 1)
+
+x=1
+q = nrow(dsdl)
+
+while (x < q) {
+  
+  for (i in ((dsdl$RiverMile[x])+1):((dsdl$RiverMile[x+1])-1)){ 
+    dsdl[nrow(dsdl) + 1,] = dsdl[x,]
+    dsdl$RiverMile[nrow(dsdl)] = i
+}
+  x = x+2
+}
+
+dsdl = arrange(dsdl, tow_id, RiverMile)
+
+speed_down = rbind(dsdl, dsds)
+
+speed_down_plot = speed_down %>% group_by(RiverMile) %>%
+  summarise(mean_speed = mean(speed))
+speed_down_plot
+
+speed_v_rivermile_d = ggplot(speed_down_plot, aes(x=RiverMile, y=mean_speed)) + geom_point() + labs(title = "Downstream 2014")
+
+ggsave(filename = str_c("rivermile_meanspeed_down14.png"), plot = speed_v_rivermile_d, device = "png", height=4, width=4, units="in", dpi = 300)
+
+speed_v_rivermile_d
+```

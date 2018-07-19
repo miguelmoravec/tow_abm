@@ -1,0 +1,184 @@
+---
+title: "Untitled"
+author: "Miguel Moravec"
+date: "June 4, 2018"
+output: html_document
+---
+
+#2
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(pacman)
+p_load(zoo, tidyverse, lubridate, readxl, stringr, janitor, dplyr, ggplot2, Hmisc)
+```
+
+```{r plotter}
+
+data_speed_up = data3 %>%
+  filter(heading == "Upstream") %>%
+  mutate(day = as.integer(substr(PositionTi, 9, 10))) %>% 
+  group_by(tow_id) %>%
+  slice(c(1, n())) %>%
+  mutate(trip_hours_min = (min_time_end[1] - min_time_start[1])/(60*60)) %>%
+  mutate(speed = max_dist[1]/as.numeric(trip_hours_min[1])) %>%
+  ungroup() %>%
+  mutate(date = as.character(as.Date(PositionTi, "%m/%d/%Y")))
+
+data_speed_down = data3 %>%
+  filter(heading == "Downstream") %>%
+  mutate(day = as.integer(substr(PositionTi, 9, 10))) %>% 
+  group_by(tow_id) %>%
+  slice(c(1, n())) %>%
+  mutate(trip_hours_min = (min_time_end[1] - min_time_start[1])/(60*60)) %>%
+  mutate(speed = max_dist[1]/as.numeric(trip_hours_min[1])) %>%
+  ungroup() %>%
+  mutate(date = as.character(as.Date(PositionTi, "%m/%d/%Y")))
+
+```
+```{r stage}
+
+data_stage_raw = read_csv("AIS_validation_Master_2013.csv")
+data_stage = data_stage_raw[-c(1), ]
+colnames(data_stage) <- c("date", "Montgomery", "Sewickley"	,"Dashields", "Emsworth", "New_Cumberland")
+data_stage$date = as.character(as.Date(data_stage$date, "%m/%d/%Y"))
+data_stage = data_stage[1:365,]
+
+comb_data_up = merge(data_speed_up, data_stage, by = 'date')
+comb_data_up$New_Cumberland = as.numeric(comb_data_up$New_Cumberland)
+comb_data_up$Sewickley = as.numeric(comb_data_up$Sewickley)
+
+g1 = ggplot(comb_data_up, aes(x=New_Cumberland, y=speed)) + geom_point() + stat_summary(fun.data = "mean_cl_boot", color = "red")
+g1
+
+g2 = ggplot(comb_data_up, aes(x=Sewickley, y=speed)) + geom_point() + stat_summary(fun.data = "mean_cl_boot", color = "red")
+g2
+
+comb_data_down = merge(data_speed_down, data_stage, by = 'date')
+comb_data_down$New_Cumberland = as.numeric(comb_data_down$New_Cumberland)
+comb_data_down$Sewickley = as.numeric(comb_data_down$Sewickley)
+
+g1 = ggplot(comb_data_down, aes(x=New_Cumberland, y=speed)) + geom_point() + stat_summary(fun.data = "mean_cl_boot", color = "red")
+g1
+
+g2 = ggplot(comb_data_down, aes(x=Sewickley, y=speed)) + geom_point() + stat_summary(fun.data = "mean_cl_boot", color = "red")
+g2
+
+```
+``` {r max_plots_down}
+
+comb_data_down_max13 = comb_data_down
+
+comb_data_down_max13$Montgomery = round(as.numeric(comb_data_down_max13$Montgomery))
+comb_data_down_max13$Sewickley = round(as.numeric(comb_data_down_max13$Sewickley))
+comb_data_down_max13$New_Cumberland = round(as.numeric(comb_data_down_max13$New_Cumberland))
+
+comb_data_down13_max_s = comb_data_down_max13 %>%
+  select(speed, Sewickley) %>%
+  arrange(Sewickley, -speed) %>% group_by(Sewickley) %>% mutate(S_max = speed[1]) %>%
+  summarise(max=head(speed,1), count=n_distinct(speed))
+
+comb_data_down13_max_m = comb_data_down_max13 %>%
+  select(speed, Montgomery) %>%
+  arrange(Montgomery, -speed) %>% group_by(Montgomery) %>% mutate(S_max = speed[1]) %>%
+  summarise(max=head(speed,1), count=n_distinct(speed))
+
+comb_data_down13_max_nc = comb_data_down_max13 %>%
+  select(speed, New_Cumberland) %>%
+  arrange(New_Cumberland, -speed) %>% group_by(New_Cumberland) %>% mutate(S_max = speed[1]) %>%
+  summarise(max=head(speed,1), count=n_distinct(speed))
+
+#down max plots
+  
+ncd<- lm(max ~ New_Cumberland, data = comb_data_down13_max_nc)
+
+ncd = tidy(ncd) %>% filter(term != "(Intercept)") %>% mutate_if(is.numeric, funs(signif(., 3))) %>% mutate(dep.var = "max", r.squared = glance(ncd)$r.squared) %>% select(indep.var = term, dep.var, regression.coeff = estimate, r.squared, p.value, std.error)	
+ncd 
+
+g13dmax = ggplot(comb_data_down13_max_nc, aes(x=New_Cumberland, y=max)) + geom_point() + geom_smooth(method = "lm")
+
+ggsave(filename = str_c("ncd13.png"), plot = g13dmax, device = "png", height=4, width=4, units="in", dpi = 300)
+
+g13dmax
+
+sd <- lm(max ~ Sewickley, data = comb_data_down13_max_s)
+
+sd = tidy(sd) %>% filter(term != "(Intercept)") %>% mutate_if(is.numeric, funs(signif(., 3))) %>% mutate(dep.var = "max", r.squared = glance(sd)$r.squared) %>% select(indep.var = term, dep.var, regression.coeff = estimate, r.squared, p.value, std.error)	
+sd 
+
+g23dmax = ggplot(comb_data_down13_max_s, aes(x=Sewickley, y=max)) + geom_point() + geom_smooth(method = "lm")
+
+ggsave(filename = str_c("sd13.png"), plot = g23dmax, device = "png", height=4, width=4, units="in", dpi = 300)
+
+g23dmax
+
+#g33dmax = ggplot(comb_data_down13_max_m, aes(x=Montgomery, y=max)) + geom_point() + geom_smooth(method = "lm")
+#g33dmax
+  
+
+```
+
+``` {r max_plots_up}
+
+#finds max speed values for given stage height and assessess trend in max speed as stage increases
+
+comb_data_up_max13 = comb_data_up
+
+comb_data_up_max13$Montgomery = round(as.numeric(comb_data_up_max13$Montgomery))
+comb_data_up_max13$Sewickley = round(as.numeric(comb_data_up_max13$Sewickley))
+comb_data_up_max13$New_Cumberland = round(as.numeric(comb_data_up_max13$New_Cumberland))
+
+comb_data_up13_max_s = comb_data_up_max13 %>%
+  select(speed, Sewickley) %>%
+  arrange(Sewickley, -speed) %>% group_by(Sewickley) %>% mutate(S_max = speed[1]) %>%
+  summarise(max=head(speed,1), count=n_distinct(speed))
+
+comb_data_up13_max_m = comb_data_up_max13 %>%
+  select(speed, Montgomery) %>%
+  arrange(Montgomery, -speed) %>% group_by(Montgomery) %>% mutate(S_max = speed[1]) %>%
+  summarise(max=head(speed,1), count=n_distinct(speed))
+
+comb_data_up13_max_nc = comb_data_up_max13 %>%
+  select(speed, New_Cumberland) %>%
+  arrange(New_Cumberland, -speed) %>% group_by(New_Cumberland) %>% mutate(S_max = speed[1]) %>%
+  summarise(max=head(speed,1), count=n_distinct(speed))
+  
+#up max plots
+
+
+ncu<- lm(max ~ New_Cumberland, data = comb_data_up13_max_nc)
+
+ncu = tidy(ncu) %>% filter(term != "(Intercept)") %>% mutate_if(is.numeric, funs(signif(., 3))) %>% mutate(dep.var = "max" , r.squared = glance(ncu)$r.squared) %>% select(indep.var = term, dep.var, regression.coeff = estimate, r.squared, p.value, std.error)	
+ncu 
+
+g13umax = ggplot(comb_data_up13_max_nc, aes(x=New_Cumberland, y=max)) + geom_point()+ geom_smooth(method = "lm")
+
+ggsave(filename = str_c("ncu13.png"), plot = g13umax, device = "png", height=4, width=4, units="in", dpi = 300)
+
+g13umax
+
+su <- lm(max ~ Sewickley, data = comb_data_up13_max_s)
+
+su = tidy(su) %>% filter(term != "(Intercept)") %>% mutate_if(is.numeric, funs(signif(., 3))) %>% mutate(dep.var = "max", r.squared = glance(su)$r.squared) %>% select(indep.var = term, dep.var, regression.coeff = estimate, r.squared, p.value, std.error)	
+su 
+
+g23umax = ggplot(comb_data_up13_max_s, aes(x=Sewickley, y=max)) + geom_point() + geom_smooth(method = "lm")
+
+ggsave(filename = str_c("su13.png"), plot = g23umax, device = "png", height=4, width=4, units="in", dpi = 300)
+
+g23umax
+
+#g33umax = ggplot(comb_data_up13_max_m, aes(x=Montgomery, y=max)) + geom_point() + geom_smooth(method = "lm")
+#g33umax
+
+
+mod_list13 <- list(ncu, su, ncd, sd)
+
+mod_tbl13 <- rbindlist(lapply(mod_list13, as.data.frame.list), fill=TRUE)
+
+mod_tbl13$heading = c("Up", "Up", "Down", "Down")
+
+write.table(mod_tbl13, "max_stage_speed_slopes13.csv", sep=",", row.names = FALSE)
+
+
+```
