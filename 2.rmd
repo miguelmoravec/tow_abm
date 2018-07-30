@@ -21,14 +21,14 @@ p_load(dplyr, tidyr, splitstackshape, stringr, stats, ggplot2, bayesplot)
 #setwd('C:/Users/nelsonks/Dropbox/Kate_Paul/paul_simulations/2013_AIS_30min_jan_jun')
 #setwd('C:/Users/nelsonks/Dropbox/Kate_Paul/paul_simulations/2013_AIS_30min_may_oct')
 #setwd('C:/Users/nelsonks/Dropbox/Kate_Paul/paul_simulations/2013_AIS_30min_jun_aug')
-setwd('C:/Users/Miguel/Documents/USCG Project/tow_abm/tow_abm')
+setwd('C:/Users/Miguel/Documents/USCG Project/tow_abm/tow_abm/proc_dir')
 
 
 #########################################
 ###Comparison of Total Time in System ###
 #########################################
 
-  files2<- c("systime_testing1..csv"
+  files2<- c(paste0("systime_",simname,".csv")
             )
 
 n<-length(files2)

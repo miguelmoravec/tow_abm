@@ -58,7 +58,8 @@ time_speed$PositionTi = strftime(time_speed$PositionTi, format="%H:%M:%S")
 time_speed$PositionTi = as.POSIXct(time_speed$PositionTi, format="%H:%M:%S")
 
 ggplot(data = time_speed, aes(x = PositionTi, y = speed_instant, color = abs(diff))) +
-    geom_smooth() + geom_point() + coord_cartesian(ylim=c(2.5,4.5))
+    geom_smooth() + geom_point()
+    #+ coord_cartesian(ylim=c(2.5,4.5))
 
 
 ```

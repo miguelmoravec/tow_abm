@@ -19,12 +19,16 @@ p_load(dplyr, tidyr, splitstackshape, stringr, stats, ggplot2, bayesplot, hms, l
 #setwd('C:/Users/nelsonks/Dropbox/Kate_Paul/paul_simulations/2013_AIS_30min_jun_aug')
 #setwd('C:/Users/nelsonks/Dropbox/Kate_Paul/paul_simulations/2013_AIS_15min_jan_jun')
 #setwd('C:/Users/nelsonks/Dropbox/Kate_Paul/paul_simulations/2013_AIS_15min_may_oct')
-setwd('C:/Users/Miguel/Documents/USCG Project/tow_abm/tow_abm')
+setwd('C:/Users/Miguel/Documents/USCG Project/tow_abm/tow_abm/proc_dir')
 
 ####################################
 ####READ IN THE SIMULATION DATA####
 ###################################
-file<-"testing1.txt"
+
+
+#file<-"testing1.txt" 
+#above not needed if running in sequence
+
 simname<-substr(file,1,9)
 dat<-scan(paste(file), what=character(), sep =",", strip.white=T, blank.lines.skip=T) #scan in the simulation data
 new <-  strsplit(as.character(dat),", ",fixed=TRUE) #break up single text line of data into rows of text 
@@ -83,31 +87,52 @@ inttime<-30 #interval time for the simulation
     up<-towtrack[towtrack$heading==90 & towtrack$id %in% names[1:30], ]
     up$time<-as.hms(up$time) #convert to hms class which plays nicely with ggplot
     
+    
+    tiff("2.tiff", units="in", width=5, height=5, res=300)
+
     p <- ggplot(up, aes(x = rm))
     p <- p + geom_line(aes(y = time, colour = id, group = id, size=1)) + 
       theme(legend.position="none") + xlab("River Mile") + ylab("Hour of the Day") + scale_x_reverse()
     p
+    
+    dev.off()
+    
+    tiff("3.tiff", units="in", width=5, height=5, res=300)
     
     p <- ggplot(up, aes(x = datetime))
     p <- p + geom_line(aes(y = rm, colour = id, group = id)) + 
       theme(legend.position="none") + xlab("Date and Time") + ylab("River Mile")+ scale_y_reverse()
     p
     
+    dev.off()
+    
+    
     #Plot tracks for downstream, grouping by tow
     dwn<-towtrack[towtrack$heading==270 & towtrack$id %in% names[1:30], ]
     dwn<-arrange(dwn,desc(datetime)) #sort descending by time so plot lines connect properly
     dwn$time<-as.hms(dwn$time)
+    
+
+    
+    tiff("4.tiff", units="in", width=5, height=5, res=300)
+
     
     p <- ggplot(dwn, aes(x = rm))
     p <- p + geom_line(aes(y = time, colour = id, group = id, size=1)) + 
       theme(legend.position="none") + xlab("River Mile") + ylab("Hour of the Day")+ scale_x_reverse()
     p
     
+    dev.off()
+    
+    tiff("5.tiff", units="in", width=5, height=5, res=300)
+
+    
     p <- ggplot(dwn, aes(x = datetime))
     p <- p + geom_line(aes(y = rm, colour = id, group = id)) + 
       theme(legend.position="none") + xlab("Date and Time") + ylab("River Mile")+ scale_y_reverse()
     p
     
+    dev.off()
 
   #################################################
   #### Plot the AIS Tow Tracks####
@@ -145,20 +170,36 @@ inttime<-30 #interval time for the simulation
   up<-aistrack[aistrack$heading==90 & aistrack$id %in% names[1:30], ] #change the names indexing to select different tows and associated time periods
   up$time<-as.hms(up$time) #convert to hms class which plays nicely with ggplot
   
+    
+    tiff("6.tiff", units="in", width=5, height=5, res=300)
+
   p <- ggplot(up, aes(x = rm))
   p <- p + geom_line(aes(y = time, colour = id, group = id, size=1)) + 
     theme(legend.position="none") + xlab("River Mile") + ylab("Hour of the Day") + scale_x_reverse()
   p
+  
+  dev.off()
+    
+    tiff("7.tiff", units="in", width=5, height=5, res=300)
+
   
   p <- ggplot(up, aes(x = datetime))
   p <- p + geom_line(aes(y = rm, colour = id, group = id)) + 
     theme(legend.position="none") + xlab("Date and Time") + ylab("River Mile")+ scale_y_reverse()
   p
   
+  dev.off()
+  
+
+  
   #Plot tracks for downstream, grouping by tow
   dwn<-aistrack[aistrack$heading==270 & aistrack$id %in% names[1:30], ]
   dwn<-arrange(dwn,desc(datetime)) #sort descending by time so plot lines connect properly
   dwn$time<-as.hms(dwn$time)
+  
+    
+    tiff("8.tiff", units="in", width=5, height=5, res=300)
+
   
   p <- ggplot(dwn, aes(x = rm))
   p <- p + geom_line(aes(y = time, colour = id, group = id, size=1)) + 
@@ -166,11 +207,16 @@ inttime<-30 #interval time for the simulation
   p
   
   
+  dev.off()
+    
+    tiff("9.tiff", units="in", width=5, height=5, res=300)
+
   p <- ggplot(dwn, aes(x = datetime))
   p <- p + geom_line(aes(y = rm, colour = id, group = id)) + 
     theme(legend.position="none") + xlab("Date and Time") + ylab("River Mile")+ scale_y_reverse()
   p
   
+  dev.off()
   
   ##########################################################
   ###Now combine AIS and SIM data and plot tracks together
@@ -184,13 +230,21 @@ inttime<-30 #interval time for the simulation
   
   #Plot joint ais and sim tracks for upstream, grouping by tow [500:520]
   up<-full_trk[full_trk$ais_head==90 & full_trk$id %in% names[360:380], ] #jun 19-jun 22
-  up$time<-as.hms(up$time) #convert to hms class which plays nicely with ggplot
+  up$time<-as.hms(up$sim_time) #convert to hms class which plays nicely with ggplot
   
+    
+    tiff("10.tiff", units="in", width=5, height=5, res=300)
+
   p <- ggplot(up)
   p <- p + geom_line(aes(y = ais_time, x=ais_rm, colour = id, group = id), size=1) + 
             geom_line(aes(y = sim_time, x=sim_rm, colour = id, group = id), size=2) +
             theme(legend.position="none") + xlab("River Mile") + ylab("Hour of the Day") + scale_x_reverse()
   p
+  
+  dev.off()
+    
+    tiff("11.tiff", units="in", width=5, height=5, res=300)
+
   
   p <- ggplot(up)
   p <- p + geom_line(aes(y = ais_rm, x=ais_dt, colour = id, group = id)) + 
@@ -198,10 +252,17 @@ inttime<-30 #interval time for the simulation
     theme(legend.position="none") + xlab("Date and Time") + ylab("River Mile")+ scale_y_reverse()
   p
   
+  dev.off()
+  
   #Plot joint ais and sim tracks for downstream, grouping by tow
   dwn<-full_trk[full_trk$ais_head==270 & full_trk$id %in% names[330:350], ]
-  dwn<-arrange(dwn,desc(datetime)) #sort descending by time so plot lines connect properly
-  dwn$time<-as.hms(dwn$time) #convert to hms class which plays nicely with ggplot
+  dwn<-arrange(dwn,desc(sim_dt)) #sort descending by time so plot lines connect properly
+  dwn$sim_time<-as.hms(dwn$sim_time) #convert to hms class which plays nicely with ggplot
+  dwn$ais_time<-as.hms(dwn$ais_time) #convert to hms class which plays nicely with ggplot
+  
+    
+    tiff("12.tiff", units="in", width=5, height=5, res=300)
+
   
   p <- ggplot(dwn)
   p <- p + geom_line(aes(y = ais_time, x=ais_rm, colour = id, group = id, size=1)) + 
@@ -209,9 +270,18 @@ inttime<-30 #interval time for the simulation
     theme(legend.position="none") + xlab("River Mile") + ylab("Hour of the Day") + scale_x_reverse()
   p
   
+  dev.off()
+    
+    tiff("13.tiff", units="in", width=5, height=5, res=300)
+
+  
   p <- ggplot(dwn)
   p <- p + geom_line(aes(y = ais_rm, x=ais_dt, colour = id, group = id)) + 
     geom_line(aes(y = sim_rm, x=sim_dt, colour = id, group = id), size=1.5) +
     theme(legend.position="none") + xlab("Date and Time") + ylab("River Mile")+ scale_y_reverse()
   p
+  
+  dev.off()
+
+
 ```

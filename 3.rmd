@@ -11,7 +11,7 @@ output: html_document
 library(pacman)
 p_load(bayesplot, ggplot2, dplyr, stringr, reshape2)
 
-setwd('C:/Users/Miguel/Documents/USCG Project/tow_abm/tow_abm')
+setwd('C:/Users/Miguel/Documents/USCG Project/tow_abm/tow_abm/proc_dir')
 
 
 d_sys<-read.csv("full_systime_data.csv", header=T, na.strings= "", stringsAsFactors = FALSE) 
@@ -66,14 +66,33 @@ mydf_m$type<- mydf_m$type %>% str_match_all("[[:alpha:]]+") %>% unlist %>% as.ch
 mydf_m<-mydf_m[mydf_m$value!=0,]
 
 #boxplots
-ggplot(mydf_m,aes(y = value, x = number,colour=type)) + geom_boxplot(aes(), size=1) 
+
+    
+    tiff("1_box.tiff", units="in", width=5, height=5, res=300)
+
+
+p = ggplot(mydf_m,aes(y = value, x = number,colour=type)) + geom_boxplot(aes(), size=1) 
+p
+
+    dev.off()
+    
+    tiff("1_distr.tiff", units="in", width=5, height=5, res=300)
+
 
 #empircal cumulative distribution fcn
-ggplot(mydf_m,aes(x = value)) + stat_ecdf(geom="step",aes(colour = number, linetype=type), size=1)
+p = ggplot(mydf_m,aes(x = value)) + stat_ecdf(geom="step",aes(colour = number, linetype=type), size=1)
+p
+
+dev.off()
+    
+    tiff("1_prob.tiff", units="in", width=5, height=5, res=300)
 
 #probability density fcn
-ggplot(mydf_m,aes(x = value,colour = number,linetype=type)) + geom_density(aes(), size=1, adjust=1) + xlim(0,200) 
+p = ggplot(mydf_m,aes(x = value,colour = number,linetype=type)) + geom_density(aes(), size=1, adjust=1) + xlim(0,200) 
+p
 
+dev.off()
+  
 
 
 
