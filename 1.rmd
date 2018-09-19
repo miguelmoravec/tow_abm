@@ -19,12 +19,12 @@ p_load(dplyr, tidyr, splitstackshape, stringr)
 #setwd('C:/Users/nelsonks/Dropbox/Kate_Paul/paul_simulations/2013_AIS_30min_jan_jun')
 #setwd('C:/Users/nelsonks/Dropbox/Kate_Paul/paul_simulations/2013_AIS_30min_may_oct')
 #setwd('C:/Users/nelsonks/Dropbox/Kate_Paul/paul_simulations/2013_AIS_30min_jun_aug')
-setwd('C:/Users/Miguel/Documents/USCG Project/tow_abm/tow_abm/proc_dir')
+setwd('C:/Users/Miguel/Documents/USCG Project/tow_abm/tow_abm/test_dir_sort')
 
 ####################################
 ####READ IN THE SIMULATION DATA####
 ###################################
-file<-"2013_control_3mo.txt"
+file<-"2013_Dock_Divert.txt"
 simname<-substr(file,1,9)
 dat<-scan(paste(file), what=character(), sep =",", strip.white=T, blank.lines.skip=T) #scan in the simulation data
 new <-  strsplit(as.character(dat),", ",fixed=TRUE) #break up single text line of data into rows of text 
@@ -182,7 +182,12 @@ st<-st[order(st$who),]
 st<-st[st$deathday!=0,]
 st$systemtime<-(st$deathday-st$birthday)*inttime/60
 st$systemtime<-as.difftime(st$systemtime, units = c("hours"))
+####MIGUEL ADDING FOR ROUGH AVG SPEED CALC
+st$origin=as.integer(st$origin)
+st$destination=as.integer(st$destination)
+st$speed<-abs(st$origin-st$destination)/as.numeric(st$systemtime)
 
+####
 write.csv(st,paste0("systime_",simname,".csv"),row.names=FALSE)
 
 }
