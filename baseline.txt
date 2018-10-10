@@ -1,0 +1,4 @@
+interval_time	min_trailing_dist	min_speed	max_speed	up_speed_target	down_speed_target	up_speed_dev	down_speed_dev	anti_time_moving_obj	anti_time_stat_obj
+
+30	0.1	0.5	10	3	9	1	1	30	30
+

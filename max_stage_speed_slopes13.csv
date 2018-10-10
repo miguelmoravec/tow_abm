@@ -1,0 +1,5 @@
+"indep.var","dep.var","regression.coeff","r.squared","p.value","std.error","heading"
+"New_Cumberland","max",-0.61,0.76714258524981,0.0000867,0.101,"Up"
+"Sewickley","max",-1.39,0.92542945703015,0.00053,0.176,"Up"
+"New_Cumberland","max",-0.393,0.483612137961324,0.00831,0.123,"Down"
+"Sewickley","max",-0.724,0.644745811609973,0.0297,0.24,"Down"

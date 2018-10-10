@@ -1,0 +1,58 @@
+---
+title: "data_sort_beta"
+author: "Miguel Moravec"
+date: "May 25, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(pacman)
+p_load(zoo, tidyverse, lubridate, readxl, stringr, janitor, dplyr)
+
+```
+
+```{r load_data}
+
+############################
+### PLACE FILE NAME HERE ###
+############################
+
+input = "rivermileCG2013.csv"
+
+############################
+########### RUN ############
+############################
+
+#reads in data
+
+data = read_csv(input)
+
+#establishes naming convention
+
+name = substring(input,12,(as.integer(nchar(input))))
+
+#sorts by boat id and date and removes irrelavant vessels by type
+
+data2 = data[order(data$MMSI, data$PositionTi),]
+
+data2
+
+data2 = filter(data2, VesselType == 'Tug' | VesselType == 'Vessel' | VesselType == 'Tanker')
+
+data2
+
+#calcs diff in rivermile marker for each value per boat
+
+x=2
+
+data2 = data2 %>% group_by(MMSI) %>%
+  mutate(diff = ave(RiverMile, MMSI, FUN=function(x) c(0, diff(x)))) %>%
+  mutate(diff_sign = sign(diff)) %>%
+  mutate(diff_mag = cummin(diff_sign))
+
+data2
+
+
+
+```
